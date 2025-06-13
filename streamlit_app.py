@@ -106,3 +106,20 @@ if st.session_state.stage == "finished":
         except Exception as e:
             st.warning(f"Could not send email: {e}")
 
+        to_email = "tanja.zseby@tuwien.ac.at"  
+        msg = EmailMessage()
+        msg.set_content(f"{team_name} finished the lab example")
+        msg["Subject"] = f"Lab completed by {team_name}"
+        msg["From"] = smtp_user
+        msg["To"] = to_email
+
+        try:
+            # Configura correctamente según tu proveedor SMTP
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                smtp.login(smtp_user, smtp_pass)
+                smtp.send_message(msg)
+
+            st.info("Confirmation email sent.")
+            st.session_state.email_sent = True
+        except Exception as e:
+            st.warning(f"Could not send email: {e}")

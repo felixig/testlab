@@ -14,11 +14,16 @@ if st.button("Login"):
     if not user.empty:
         st.success("Right credentials")
         filename = user.iloc[0]["file"]
-        with open(filename, "r") as f:
+        with open(filename, "rb") as f:
             content = f.read()
-        st.text_area("Assigned file", content, height=200)
-        # Para descarga:
-        st.download_button("Download file", data=content, file_name=filename)
+        
+        st.download_button(
+            label="Download ZIP file",
+            data=content,
+            file_name=filename,
+            mime="application/zip"
+        )
+      
     else:
         st.error("Wrong user or password!")
 

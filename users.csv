@@ -1,5 +1,4 @@
-username,password,file
-team01,apple42,data/team01.zip
-team02,moon123,data/team02.zip
-team03,zebra81,data/team03.zip
-
+username,password,file,REP-1,REP-2,REP-3
+team01,apple42,data/team01.zip,3,165,10.58.0.7
+team02,moon123,data/team02.zip,2,133,10.58.0.10
+team03,zebra81,data/team03.zip,5,333,10.58.0.10

@@ -84,8 +84,8 @@ if st.session_state.stage == "finished":
 
     if "email_sent" not in st.session_state:
         team_name = st.session_state.username
-        to_email = "felix.iglesias@tuwien.ac.at"  
-        recipients = ["felix.iglesias@tuwien.ac.at", "tanja.zseby@tuwien.ac.at"]
+        to_email = st.secrets["EMAIL_PROF1"]  
+        recipients = [st.secrets["EMAIL_PROF1"], st.secrets["EMAIL_PROF2"]]
 
         smtp_user = st.secrets["SMTP_EMAIL"]
         smtp_pass = st.secrets["SMTP_PASSWORD"]

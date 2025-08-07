@@ -23,23 +23,21 @@ if st.session_state.stage == "login":
 
     if st.button("Login"):
         course_file_path = f"courses/{course_code}.csv"
-
-        if not os.path.exists(course_file_path):
-            st.error("Invalid course code!")
+        if os.path.exists(course_file_path):
+            users_df = pd.read_csv(course_file_path)
+            user = users_df[(users_df["username"] == username) & (users_df["password"] == password)]
+            if not user.empty:
+                st.session_state.stage = "download"
+                st.session_state.username = username
+                st.session_state.users_df = users_df
+                st.success("Login successful!")
+            else:
+                st.error("Wrong credentials!")
         else:
-            try:
-                users_df = pd.read_csv(course_file_path)
-                user = users_df[(users_df["username"] == username) & (users_df["password"] == password)]
-                if not user.empty:
-                    st.session_state.stage = "download"
-                    st.session_state.username = username
-                    st.success("Login successful!")
-                else:
-                    st.error("Wrong credentials!")
-            except Exception as e:
-                st.error(f"Error loading course: {e}")
+            st.error("Invalid course code!")
 
 if st.session_state.stage == "download":
+    users_df = st.session_state.users_df
     user_row = users_df[users_df["username"] == st.session_state.username].iloc[0]
     filename = user_row["file"]
 
@@ -52,41 +50,12 @@ if st.session_state.stage == "download":
         st.session_state.stage = "exercise"
         st.session_state.current_block_index = 0
 
-def show_block(block):
-    for item in block["contents"]:
-        if item["type"] == "text":
-            st.markdown(item["value"])
-        elif item["type"] == "image":
-            st.image(item["value"], use_column_width=True)
-
-def handle_question(block, user_row):
-    rep_id = block["rep"]
-    if rep_id == -1:
-        return
-
-    key = f"rep_{rep_id}_answer"
-    if rep_id not in st.session_state.correct_reps:
-        st.session_state.correct_reps[rep_id] = False
-
-    if isinstance(user_row[f"REP-{rep_id}"], (int, float)):
-        answer = st.number_input(f"Your answer to REP-{rep_id}:", key=key, step=1)
-    else:
-        answer = st.text_input(f"Your answer to REP-{rep_id}:", key=key)
-
-    if st.button(f"Submit REP-{rep_id}", key=f"submit_{rep_id}"):
-        expected = str(user_row[f"REP-{rep_id}"]).strip().lower()
-        received = str(answer).strip().lower()
-        if expected == received:
-            st.success("Correct!")
-            st.session_state.correct_reps[rep_id] = True
-        else:
-            st.error("Incorrect")
 
 if st.session_state.stage == "exercise":
+    users_df = st.session_state.users_df
     user_row = users_df[users_df["username"] == st.session_state.username].iloc[0]
     i = st.session_state.current_block_index
 
-    # until newpage == True (included)
     reached_newpage = False
     while i < len(blocks) and not reached_newpage:
         block = blocks[i]
@@ -96,21 +65,18 @@ if st.session_state.stage == "exercise":
             reached_newpage = True
         i += 1
 
-    # Check if we can go on
     page_blocks = blocks[st.session_state.current_block_index:i]
     all_questions_correct = all(
-        st.session_state.correct_reps.get(block["rep"], True)  # if no question, treated as correct
+        st.session_state.correct_reps.get(block["rep"], True)
         for block in page_blocks if block["rep"] != -1
     )
 
-    if all_questions_correct:
-        if st.button("Next"):
-            st.session_state.current_block_index = i
-            if st.session_state.current_block_index >= len(blocks):
-                st.session_state.stage = "finished"
-    else:
+    if all_questions_correct and st.button("Next"):
+        st.session_state.current_block_index = i
+        if st.session_state.current_block_index >= len(blocks):
+            st.session_state.stage = "finished"
+    elif not all_questions_correct:
         st.warning("Please answer all questions correctly before continuing.")
-
 
 if st.session_state.stage == "finished":
     st.balloons()

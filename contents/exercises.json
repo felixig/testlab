@@ -1,0 +1,40 @@
+[
+  {
+    "exercise": 1,
+    "order": 1,
+    "rep": -1,
+    "contents": [
+      { "type": "text", "value": "Welcome to the NS lab PoC" },
+      { "type": "image", "value": "contents/img/cybersecurity.jpg" }
+    ],
+    "newpage": true
+  },
+  {
+    "exercise": 1,
+    "order": 2,
+    "rep": 1,
+    "contents": [
+      { "type": "text", "value": "REP-1: How many packets do you see in the capture?" },
+    ],
+    "newpage": false
+  },
+  {
+    "exercise": 1,
+    "order": 3,
+    "rep": 2,
+    "contents": [
+      { "type": "text", "value": "REP-2: What is the highest packet length in the capture?" },
+    ],
+    "newpage": false
+  },
+  {
+    "exercise": 1,
+    "order": 4,
+    "rep": 3,
+    "contents": [
+      { "type": "text", "value": "REP-3: What is the IP-destination of the last packet?" }
+    ],
+    "newpage": false
+  }  
+]
+

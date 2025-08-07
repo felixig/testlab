@@ -1,0 +1,6 @@
+https://testlab-wgvjhf43mgwrgh9zpysfzb.streamlit.app/
+
+SMTP_EMAIL = felix.iglesias.info@gmail.com
+SMTP_PASSWORD = zupz zsto lako laja
+
+ 

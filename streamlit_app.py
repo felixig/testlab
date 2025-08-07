@@ -1,20 +1,23 @@
 import streamlit as st
 import pandas as pd
+import json
 import smtplib
 from email.message import EmailMessage
-import os
-
-# Cargar usuarios
-users_df = pd.read_csv("users.csv")
-
-st.title("Lab Login")
 
 if "stage" not in st.session_state:
     st.session_state.stage = "login"
     st.session_state.username = ""
-    st.session_state.answers_correct = [False, False, False]
+    st.session_state.correct_reps = {}
+    st.session_state.current_block_index = 0
 
-# Login
+
+with open("contents/exercises.json", "r", encoding="utf-8") as f:
+    blocks = json.load(f)
+
+users_df = pd.read_csv("users.csv")
+
+st.title("Lab Login")
+
 if st.session_state.stage == "login":
     username = st.text_input("User")
     password = st.text_input("Password", type="password")
@@ -28,7 +31,6 @@ if st.session_state.stage == "login":
         else:
             st.error("Wrong credentials!")
 
-# File download
 if st.session_state.stage == "download":
     user_row = users_df[users_df["username"] == st.session_state.username].iloc[0]
     filename = user_row["file"]
@@ -38,53 +40,77 @@ if st.session_state.stage == "download":
 
     st.download_button("Download ZIP file", data=content, file_name=filename, mime="application/zip")
 
-    if st.button("Continue to REP-1"):
-        st.session_state.stage = "rep1"
+    if st.button("Continue"):
+        st.session_state.stage = "exercise"
+        st.session_state.current_block_index = 0
 
-# REP-1
-if st.session_state.stage == "rep1":
-    user_row = users_df[users_df["username"] == st.session_state.username].iloc[0]
-    answer = st.number_input("REP-1: How many packets do you see in the capture?", step=1)
-    if st.button("Submit REP-1"):
-        if answer == user_row["REP-1"]:
+def show_block(block):
+    for item in block["contents"]:
+        if item["type"] == "text":
+            st.markdown(item["value"])
+        elif item["type"] == "image":
+            st.image(item["value"], use_column_width=True)
+
+def handle_question(block, user_row):
+    rep_id = block["rep"]
+    if rep_id == -1:
+        return
+
+    key = f"rep_{rep_id}_answer"
+    if rep_id not in st.session_state.correct_reps:
+        st.session_state.correct_reps[rep_id] = False
+
+    if isinstance(user_row[f"REP-{rep_id}"], (int, float)):
+        answer = st.number_input(f"Your answer to REP-{rep_id}:", key=key, step=1)
+    else:
+        answer = st.text_input(f"Your answer to REP-{rep_id}:", key=key)
+
+    if st.button(f"Submit REP-{rep_id}", key=f"submit_{rep_id}"):
+        expected = str(user_row[f"REP-{rep_id}"]).strip().lower()
+        received = str(answer).strip().lower()
+        if expected == received:
             st.success("Correct!")
-            st.session_state.answers_correct[0] = True
-            st.session_state.stage = "rep2"
+            st.session_state.correct_reps[rep_id] = True
         else:
             st.error("Incorrect")
 
-# REP-2
-if st.session_state.stage == "rep2":
+if st.session_state.stage == "exercise":
     user_row = users_df[users_df["username"] == st.session_state.username].iloc[0]
-    answer = st.number_input("REP-2: What is the highest packet length in the capture?", step=1)
-    if st.button("Submit REP-2"):
-        if answer == user_row["REP-2"]:
-            st.success("Correct!")
-            st.session_state.answers_correct[1] = True
-            st.session_state.stage = "rep3"
-        else:
-            st.error("Incorrect")
+    i = st.session_state.current_block_index
 
-# REP-3
-if st.session_state.stage == "rep3":
-    user_row = users_df[users_df["username"] == st.session_state.username].iloc[0]
-    answer = st.text_input("REP-3: What is the IP-destination of the last packet?")
-    if st.button("Submit REP-3"):
-        if answer.strip() == str(user_row["REP-3"]).strip():
-            st.success("Correct!")
-            st.session_state.answers_correct[2] = True
-            st.session_state.stage = "finished"
-        else:
-            st.error("Incorrect")
+    # until newpage == True (included)
+    reached_newpage = False
+    while i < len(blocks) and not reached_newpage:
+        block = blocks[i]
+        show_block(block)
+        handle_question(block, user_row)
+        if block["newpage"]:
+            reached_newpage = True
+        i += 1
 
-# Final stage: send email
+    # Check if we can go on
+    page_blocks = blocks[st.session_state.current_block_index:i]
+    all_questions_correct = all(
+        st.session_state.correct_reps.get(block["rep"], True)  # if no question, treated as correct
+        for block in page_blocks if block["rep"] != -1
+    )
+
+    if all_questions_correct:
+        if st.button("Next"):
+            st.session_state.current_block_index = i
+            if st.session_state.current_block_index >= len(blocks):
+                st.session_state.stage = "finished"
+    else:
+        st.warning("Please answer all questions correctly before continuing.")
+
+
 if st.session_state.stage == "finished":
     st.balloons()
     st.success("Lab completed. Thank you!")
 
     if "email_sent" not in st.session_state:
         team_name = st.session_state.username
-        to_email = st.secrets["EMAIL_PROF1"]  
+        to_email = st.secrets["EMAIL_PROF1"]
         recipients = [st.secrets["EMAIL_PROF1"], st.secrets["EMAIL_PROF2"]]
 
         smtp_user = st.secrets["SMTP_EMAIL"]
@@ -97,11 +123,9 @@ if st.session_state.stage == "finished":
         msg["To"] = ", ".join(recipients)
 
         try:
-            # Configura correctamente según tu proveedor SMTP
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
                 smtp.login(smtp_user, smtp_pass)
                 smtp.send_message(msg)
-
             st.info("Confirmation email sent.")
             st.session_state.email_sent = True
         except Exception as e:

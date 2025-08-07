@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import smtplib
 from email.message import EmailMessage
+import os
 
 if "stage" not in st.session_state:
     st.session_state.stage = "login"
@@ -10,26 +11,33 @@ if "stage" not in st.session_state:
     st.session_state.correct_reps = {}
     st.session_state.current_block_index = 0
 
-
 with open("contents/exercises.json", "r", encoding="utf-8") as f:
     blocks = json.load(f)
-
-users_df = pd.read_csv("users.csv")
 
 st.title("Lab Login")
 
 if st.session_state.stage == "login":
     username = st.text_input("User")
     password = st.text_input("Password", type="password")
+    course_code = st.text_input("Course code")
 
     if st.button("Login"):
-        user = users_df[(users_df["username"] == username) & (users_df["password"] == password)]
-        if not user.empty:
-            st.session_state.stage = "download"
-            st.session_state.username = username
-            st.success("Login successful!")
+        course_file_path = f"courses/{course_code}.csv"
+
+        if not os.path.exists(course_file_path):
+            st.error("Invalid course code!")
         else:
-            st.error("Wrong credentials!")
+            try:
+                users_df = pd.read_csv(course_file_path)
+                user = users_df[(users_df["username"] == username) & (users_df["password"] == password)]
+                if not user.empty:
+                    st.session_state.stage = "download"
+                    st.session_state.username = username
+                    st.success("Login successful!")
+                else:
+                    st.error("Wrong credentials!")
+            except Exception as e:
+                st.error(f"Error loading course: {e}")
 
 if st.session_state.stage == "download":
     user_row = users_df[users_df["username"] == st.session_state.username].iloc[0]

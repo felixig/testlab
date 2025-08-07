@@ -50,7 +50,36 @@ if st.session_state.stage == "download":
         st.session_state.stage = "exercise"
         st.session_state.current_block_index = 0
 
+def show_block(block):
+    for item in block["contents"]:
+        if item["type"] == "text":
+            st.markdown(item["value"])
+        elif item["type"] == "image":
+            st.image(item["value"], use_column_width=True)
 
+def handle_question(block, user_row):
+    rep_id = block["rep"]
+    if rep_id == -1:
+        return
+
+    key = f"rep_{rep_id}_answer"
+    if rep_id not in st.session_state.correct_reps:
+        st.session_state.correct_reps[rep_id] = False
+
+    if isinstance(user_row[f"REP-{rep_id}"], (int, float)):
+        answer = st.number_input(f"Your answer to REP-{rep_id}:", key=key, step=1)
+    else:
+        answer = st.text_input(f"Your answer to REP-{rep_id}:", key=key)
+
+    if st.button(f"Submit REP-{rep_id}", key=f"submit_{rep_id}"):
+        expected = str(user_row[f"REP-{rep_id}"]).strip().lower()
+        received = str(answer).strip().lower()
+        if expected == received:
+            st.success("Correct!")
+            st.session_state.correct_reps[rep_id] = True
+        else:
+            st.error("Incorrect")
+            
 if st.session_state.stage == "exercise":
     users_df = st.session_state.users_df
     user_row = users_df[users_df["username"] == st.session_state.username].iloc[0]

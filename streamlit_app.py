@@ -55,7 +55,7 @@ def show_block(block):
         if item["type"] == "text":
             st.markdown(item["value"])
         elif item["type"] == "image":
-            st.image(item["value"], use_column_width=True)
+            st.image(item["value"], use_container_width=True)
 
 def handle_question(block, user_row):
     rep_id = block["rep"]

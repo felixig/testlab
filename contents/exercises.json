@@ -14,7 +14,7 @@
     "order": 2,
     "rep": 1,
     "contents": [
-      { "type": "text", "value": "REP-1: How many packets do you see in the capture?" },
+      { "type": "text", "value": "REP-1: How many packets do you see in the capture?" }
     ],
     "newpage": false
   },
@@ -23,7 +23,7 @@
     "order": 3,
     "rep": 2,
     "contents": [
-      { "type": "text", "value": "REP-2: What is the highest packet length in the capture?" },
+      { "type": "text", "value": "REP-2: What is the highest packet length in the capture?" }
     ],
     "newpage": false
   },
@@ -37,4 +37,3 @@
     "newpage": false
   }  
 ]
-
